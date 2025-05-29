@@ -9,6 +9,9 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import { NotFoundPage } from "./components/NotFoundPage";
+import { ServerErrorPage } from "./components/ServerErrorPage";
+import { GeneralErrorPage } from "./components/GeneralErrorPage";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -46,30 +49,18 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
-  let details = "An unexpected error occurred.";
-  let stack: string | undefined;
-
-  if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
-    details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
-  } else if (import.meta.env.DEV && error && error instanceof Error) {
-    details = error.message;
-    stack = error.stack;
+  // render 404 page if the error is a 404
+  if (isRouteErrorResponse(error) && error.status === 404) {
+    return <NotFoundPage />;
   }
 
-  return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
-      {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-      )}
-    </main>
-  );
+  // render server error page for server errors (5xx status codes)
+  if (isRouteErrorResponse(error) && error.status >= 500) {
+    return (
+      <ServerErrorPage status={error.status} statusText={error.statusText} />
+    );
+  }
+
+  // render general error page for other errors
+  return <GeneralErrorPage />;
 }
